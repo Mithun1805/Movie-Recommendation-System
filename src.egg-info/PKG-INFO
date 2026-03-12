@@ -1,0 +1,17 @@
+Metadata-Version: 2.4
+Name: src
+Version: 0.0.1
+Summary: A small package for the book recommender system
+Author: Mithun Vandhinika
+Author-email: mithun18005@gmail.com
+License: MIT
+Requires-Python: >3.7
+Description-Content-Type: text/markdown
+Requires-Dist: streamlit
+Dynamic: author
+Dynamic: author-email
+Dynamic: description-content-type
+Dynamic: license
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
