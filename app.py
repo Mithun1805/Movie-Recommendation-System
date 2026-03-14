@@ -1,30 +1,30 @@
+
 import streamlit as st
 from data_handle import new_df, similarity
 from filter import recommend_movies, all_genres
+from details import about
 
 st.header("🎬 Movie Recommender System")
 
-# Session state to control UI
-if "show_results" not in st.session_state:
-    st.session_state.show_results = False
+# ---------------- SESSION STATE ----------------
 
-if "selected_genres" not in st.session_state:
-    st.session_state.selected_genres = []
+if "page" not in st.session_state:
+    st.session_state.page = "home"
 
 if "selected_movie" not in st.session_state:
     st.session_state.selected_movie = ""
 
+if "selected_genres" not in st.session_state:
+    st.session_state.selected_genres = []
 
-# Movie dropdown
-movies_list = [""] + list(new_df['title'].values)
+if "recommended_movies" not in st.session_state:
+    st.session_state.recommended_movies = []
 
-select_movie = st.selectbox(
-    "Type or select a Movie (optional)",
-    movies_list
-)
 
+# ---------------- RECOMMENDATION FUNCTION ----------------
 
 def recommend(movie):
+
     index = new_df[new_df['title'] == movie].index[0]
 
     distance = sorted(
@@ -41,8 +41,57 @@ def recommend(movie):
     return recommend_list
 
 
-# BEFORE clicking recommendation
-if not st.session_state.show_results:
+# ---------------- SHOW MOVIE DETAILS PAGE ----------------
+
+def movie_details_page(movie):
+
+    movie_data = about[about['title'] == movie]
+
+    if movie_data.empty:
+        st.warning("Details not available for this movie.")
+        return
+
+    movie_data = movie_data.iloc[0]
+
+    st.title(movie)
+
+    st.write("🎬 **Overview**")
+    st.write(movie_data['overview'])
+
+    st.write("🎭 **Cast**")
+
+    cast = movie_data['cast']
+
+    if isinstance(cast, list):
+        for actor in cast[:5]:
+            st.markdown(f"• {actor}")
+    else:
+        st.write(cast)
+
+    st.write("🎥 **Director**")
+
+    director = movie_data['Director']
+
+    if isinstance(director, list):
+        st.write(", ".join(director))
+    else:
+        st.write(director)
+
+    if st.button("⬅ Back to Recommendations"):
+        st.session_state.page = "recommendations"
+        st.rerun()
+
+
+# ---------------- HOME PAGE ----------------
+
+if st.session_state.page == "home":
+
+    movies_list = [""] + list(new_df['title'].values)
+
+    select_movie = st.selectbox(
+        "Type or select a Movie (optional)",
+        movies_list
+    )
 
     st.subheader("Select Genres")
 
@@ -56,36 +105,51 @@ if not st.session_state.show_results:
 
     if st.button("Show Recommendation"):
 
-        st.session_state.selected_genres = selected_genres
-        st.session_state.selected_movie = select_movie
-        st.session_state.show_results = True
+        if selected_genres:
+            st.session_state.recommended_movies = recommend_movies(selected_genres)
 
+        elif select_movie != "":
+            st.session_state.recommended_movies = recommend(select_movie)
+
+        else:
+            st.warning("Please select a movie or genres.")
+            st.stop()
+
+        st.session_state.page = "recommendations"
         st.rerun()
 
 
-# AFTER clicking recommendation
-else:
+# ---------------- RECOMMENDATION PAGE ----------------
+
+elif st.session_state.page == "recommendations":
 
     st.subheader("Recommended Movies")
 
-    selected_genres = st.session_state.selected_genres
-    select_movie = st.session_state.selected_movie
+    movies = st.session_state.recommended_movies
 
-    if selected_genres:
-        recommended_movies = recommend_movies(selected_genres)
+    cols = st.columns(5)
 
-    elif select_movie != "":
-        recommended_movies = recommend(select_movie)
+    for i, movie in enumerate(movies):
 
-    else:
-        st.warning("Please select a movie or genres.")
-        recommended_movies = []
+        if cols[i].button(movie):
+            st.session_state.selected_movie = movie
+            st.session_state.page = "details"
+            st.rerun()
 
-    for movie in recommended_movies:
-        st.write(movie)
-
-    # Back button
-    if st.button("🔄 Back"):
-        st.session_state.show_results = False
+    if st.button("🔄 Start Over"):
+        st.session_state.page = "home"
         st.rerun()
+
+
+# ---------------- DETAILS PAGE ----------------
+
+elif st.session_state.page == "details":
+
+    movie_details_page(st.session_state.selected_movie)
+
+
+
+
+
+
     
